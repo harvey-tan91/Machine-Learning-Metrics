@@ -29,7 +29,7 @@ def grid_search_result_summary(grid_search_obj):
 
 def classifier_performance_report(classifier, X, y):
     """
-    Objective: To generate a report that display the key metrics on the classifier's performance
+    Objective: To generate a report that display the key performance metrics of a binary classifier
     Parameters:
     classifier: Classifier object
     X: Input feature
