@@ -30,7 +30,8 @@ def grid_search_result_summary(grid_search_obj):
 def classifier_performance_report(classifier, X, y):
     """
     Objective: To generate a report that display the key performance metrics of a binary classifier
-    Parameters:
+    Parameters
+    ----------
     classifier: Classifier object
     X: Input feature
     y: Target feature
@@ -90,7 +91,152 @@ def classifier_performance_report(classifier, X, y):
 
     plt.tight_layout()
     plt.show()
+
+
+def classifier_cv_report(classifier, X, y, n_kFold, no_of_repeats, random_state=False):
+    """
+    Objective: To generate a report that display the cross-validation results of a classifier
+    Cross-validation results are based on repeated k-fold cross-validation technique.
+
+    Parameters
+    ----------
+    classifier: Classifier object
+    X: Input feature
+    y: Target feature
+    n_kFold: Number of k-Folds
+    no_of_repeats: Number of times to repeat the k-Folds cross-validation process
+    """
+    import sklearn.model_selection as ms
+    import numpy as np
+
+    cv = ms.RepeatedKFold(n_splits= n_kFold, n_repeats= no_of_repeats, random_state=random_state)
+    cv_information = ms.cross_validate(classifier, X, y, scoring=['accuracy', 'precision', 'recall', 'f1'], \
+        cv= cv, return_train_score=True)
+
+    train_accuracy = cv_information['train_accuracy']
+    train_precision = cv_information['train_precision']
+    train_recall = cv_information['train_recall']
+    train_f1 = cv_information['train_f1']
+
+    test_accuracy = cv_information['test_accuracy']
+    test_precision = cv_information['test_precision']
+    test_recall = cv_information['train_recall']
+    test_f1 = cv_information['test_f1']
+
+    print('Summary on Training Data:')
+    print(f'Average Accuracy & SD: {round(np.mean(train_accuracy) * 100, 1)}% , {round(np.std(train_accuracy) * 100, 3)}%')
+    print(f'Average Precision & SD: {round(np.mean(train_precision) * 100, 1)}% , {round(np.std(train_precision) * 100, 3)}%')
+    print(f'Average Recall & SD: {round(np.mean(train_recall) * 100, 1)}% , {round(np.std(train_recall) * 100, 3)}%')
+    print(f'Average F1 & SD: {round(np.mean(train_f1) * 100, 1)}% , {round(np.std(train_f1) * 100, 3)}%')
+    print()
+    print('=====================')
+    print()
+    print('Summary on Testing Data:')
+    print(f'Average Accuracy & SD: {round(np.mean(test_accuracy) * 100, 1)}% , {round(np.std(test_accuracy) * 100, 3)}%')
+    print(f'Average Precision & SD: {round(np.mean(test_precision) * 100, 1)}% , {round(np.std(test_precision) * 100, 3)}%')
+    print(f'Average Recall & SD: {round(np.mean(test_recall) * 100, 1)}% , {round(np.std(test_recall) * 100, 3)}%')
+    print(f'Average F1 & SD: {round(np.mean(test_f1) * 100, 1)}% , {round(np.std(test_f1) * 100, 3)}%')
+
+
+def classifier_plot_learning_curve(classifier, X, y, n_kFold=5, no_of_repeats=2, random_state=False):
+    """
+    """
     
+    import sklearn.model_selection as ms
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    scoring_option = ['accuracy', 'precision', 'recall', 'f1']
+    cv = ms.RepeatedKFold(n_splits=n_kFold, n_repeats=no_of_repeats, random_state=random_state)
+    train_size_option = np.arange(0.1,1.1,0.1)
+
+    train_size_container = []
+    mean_train_score_container = []
+    mean_test_score_container = []
+    std_train_score_container = []
+    std_test_score_containter = []
+
+    for option in scoring_option:
+        train_size, train_score, test_score = ms.learning_curve(classifier, X, y, train_sizes=train_size_option, cv=cv, scoring=option)
+        train_score = [i*100 for i in train_score]
+        test_score = [i*100 for i in test_score]
+
+        train_size_container.append(train_size)
+        mean_train_score_container.append([np.mean(i) for i in train_score])
+        mean_test_score_container.append([np.mean(i) for i in test_score])
+
+        std_train_score_container.append([np.std(i) for i in train_score])
+        std_test_score_containter.append([np.std(i) for i in test_score])
+
+    train_size, *_ = train_size_container
+
+    acc_mean_train_score, preci_mean_train_score, recall_mean_train_score, f1_mean_train_score = np.array(mean_train_score_container)
+
+    acc_mean_test_score, preci_mean_test_score, recall_mean_test_score, f1_mean_test_score = np.array(mean_test_score_container)
+
+    std_acc_mean_train_score, std_preci_mean_train_score, std_recall_mean_train_score, std_f1_mean_train_score = np.array(std_train_score_container)
+
+    std_acc_mean_test_score, std_preci_mean_test_score, std_recall_mean_test_score, std_f1_mean_test_score = np.array(std_test_score_containter)
+
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(12,7.5))
+    fig.suptitle("Learning Curve", y=1.05, fontsize=16)
+
+    # ax1
+    # TRAIN
+    ax1.plot(train_size, acc_mean_train_score, color='g', marker='o', label='train')
+    ax1.fill_between(train_size, acc_mean_train_score - std_acc_mean_train_score, acc_mean_train_score + std_acc_mean_train_score, alpha= 0.2, color='g')
+    # TEST
+    ax1.plot(train_size, acc_mean_test_score, color='r', marker='o', label='test')
+    ax1.fill_between(train_size, acc_mean_test_score - std_acc_mean_test_score, acc_mean_test_score + std_acc_mean_test_score, alpha= 0.2, color='r')
+
+    ax1.set_title('Accuracy')
+    ax1.set_xlabel('Train Size')
+    ax1.set_ylabel('Accuracy')
+    ax1.legend()
+
+    # ax2
+    # TRAIN
+    ax2.plot(train_size, preci_mean_train_score, color='g', marker='o', label='train')
+    ax2.fill_between(train_size, preci_mean_train_score - std_preci_mean_train_score, preci_mean_train_score + std_preci_mean_train_score, alpha= 0.2, color='g')
+    # TEST
+    ax2.plot(train_size, preci_mean_test_score, color='r', marker='o', label='test')
+    ax2.fill_between(train_size, preci_mean_test_score - std_preci_mean_test_score, preci_mean_test_score + std_preci_mean_test_score, alpha= 0.2, color='r')
+
+    ax2.set_title('Precision')
+    ax2.set_xlabel('Train Size')
+    ax2.set_ylabel('Precision')
+    ax2.legend()
+
+    # ax3
+    # TRAIN
+    ax3.plot(train_size, recall_mean_train_score, color='g', marker='o', label='train')
+    ax3.fill_between(train_size, recall_mean_train_score - std_recall_mean_train_score, recall_mean_train_score + std_recall_mean_train_score, alpha= 0.2, color='g')
+    # TEST
+    ax3.plot(train_size, recall_mean_test_score, color='r', marker='o', label='test')
+    ax3.fill_between(train_size, recall_mean_test_score - std_recall_mean_test_score, recall_mean_test_score + std_recall_mean_test_score, alpha= 0.2, color='r')
+
+    ax3.set_title('Recall')
+    ax3.set_xlabel('Train Size')
+    ax3.set_ylabel('Recall')
+    ax3.legend()
+
+    # ax4
+    # TRAIN
+    ax4.plot(train_size, f1_mean_train_score, color='g', marker='o', label='train')
+    ax4.fill_between(train_size, f1_mean_train_score - std_f1_mean_train_score, f1_mean_train_score + std_f1_mean_train_score, alpha= 0.2, color='g')
+    # TEST
+    ax4.plot(train_size, f1_mean_test_score, color='r', marker='o', label='test')
+    ax4.fill_between(train_size, f1_mean_test_score - std_f1_mean_test_score, f1_mean_test_score + std_f1_mean_test_score, alpha= 0.2, color='r')
+
+    ax4.set_title('F1')
+    ax4.set_xlabel('Train Size')
+    ax4.set_ylabel('F1')
+    ax4.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
 
 def decision_tree_classifier_ccp_analysis(tree_estimator, X_train, y_train, X_test, y_test):
     """
@@ -145,7 +291,8 @@ def decision_tree_classifier_ccp_analysis(tree_estimator, X_train, y_train, X_te
 def gini_impurity_single_node(x:int, y:int):
     """
     Objective: To calculate the Gini impurity value for a single node
-    Parameters:
+    Parameters
+    ----------
     x: number of instances in the positve class
     y: number of instances in the negative class
     """
@@ -158,7 +305,8 @@ def gini_impurity_single_node(x:int, y:int):
 def gini_impurity_two_node(x1:int, y1:int, x2:int, y2:int):
     """
     Objective: To calculate the Gini impurity value for a split node
-    Parameters:
+    Parameters
+    ----------
     x1: number of instances in the positive-positive class
     y1: number of instances in the positive-negative class
     x2: number of instances in the negative-positive class
@@ -174,7 +322,6 @@ def gini_impurity_two_node(x1:int, y1:int, x2:int, y2:int):
 
     weighted_gini_value= (total_1 / grand_total)*gini_value_1 + (total_2 / grand_total)*gini_value_2
     return weighted_gini_value
-
 
 
 
